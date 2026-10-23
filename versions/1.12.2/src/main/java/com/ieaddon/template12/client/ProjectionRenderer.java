@@ -85,11 +85,30 @@ public final class ProjectionRenderer {
 
     @SubscribeEvent
     public static void onMouse(MouseEvent event) {
-        if (ClientProjection.isActive() && !ClientProjection.isFixed()
-                && event.getButton() == 0 && event.isButtonstate()
-                && Minecraft.getMinecraft().currentScreen == null) {
-            ClientProjection.cancel();
+        if (!ClientProjection.isActive() || ClientProjection.isFixed()
+                || !event.isButtonstate() || Minecraft.getMinecraft().currentScreen != null) {
+            return;
         }
+        if (event.getButton() == 0) {
+            ClientProjection.cancel();
+        } else if (event.getButton() == 1) {
+            // 超过 4.5 格时 RightClickBlock 不会触发，所以右键在这里处理
+            sendBuild();
+            event.setCanceled(true);
+        }
+    }
+
+    private static void sendBuild() {
+        if (ClientProjection.center() == null) {
+            return;
+        }
+        ModNetwork.CHANNEL.sendToServer(new BuildRequestMessage(
+                ClientProjection.multiblockIndex(),
+                ClientProjection.multiblockName(),
+                ClientProjection.center(),
+                ClientProjection.facing(),
+                ClientProjection.lift()));
+        ClientProjection.cancel();
     }
 
     @SubscribeEvent
@@ -101,13 +120,7 @@ public final class ProjectionRenderer {
             return;
         }
         // 右键 = 请求服务端自动摆放（成型仍由玩家用锤子敲）
-        ModNetwork.CHANNEL.sendToServer(new BuildRequestMessage(
-                ClientProjection.multiblockIndex(),
-                ClientProjection.multiblockName(),
-                ClientProjection.center(),
-                ClientProjection.facing(),
-                ClientProjection.lift()));
-        ClientProjection.cancel();
+        sendBuild();
         event.setCanceled(true);
     }
 }

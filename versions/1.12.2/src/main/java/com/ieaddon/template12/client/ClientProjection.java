@@ -69,7 +69,7 @@ public final class ClientProjection {
         fixed = false;
         lift = 0;
         Minecraft mc = Minecraft.getMinecraft();
-        facing = mc.player != null ? mc.player.getHorizontalFacing() : EnumFacing.NORTH;
+        facing = mc.player != null ? mc.player.getHorizontalFacing().rotateY() : EnumFacing.NORTH;
     }
 
     private static IMultiblock find(List<IMultiblock> all, String key) {
@@ -118,10 +118,17 @@ public final class ClientProjection {
             center = null;
             return;
         }
-        center = mc.objectMouseOver.getBlockPos();
-        if (mc.player != null) {
-            facing = mc.player.getHorizontalFacing();
+        // 30 格的射线（原版 objectMouseOver 只有 4.5 格）
+        net.minecraft.util.math.Vec3d eyes = mc.player.getPositionEyes(1.0F);
+        net.minecraft.util.math.Vec3d end = eyes.add(mc.player.getLookVec().scale(15.0D));
+        RayTraceResult hit = mc.world.rayTraceBlocks(eyes, end, false, false, true);
+        if (hit == null || hit.typeOfHit != RayTraceResult.Type.BLOCK) {
+            center = null;
+            return;
         }
+        center = hit.getBlockPos();
+        // 投影相对玩家再转 90 度
+        facing = mc.player.getHorizontalFacing().rotateY();
         lift = computeLift();
     }
 
