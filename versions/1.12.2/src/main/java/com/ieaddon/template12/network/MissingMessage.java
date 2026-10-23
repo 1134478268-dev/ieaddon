@@ -60,7 +60,6 @@ public class MissingMessage implements IMessage {
         public IMessage onMessage(MissingMessage message, MessageContext ctx) {
             List<ItemStack> stacks = message.stacks;
             List<Integer> counts = message.counts;
-            System.out.println("[ieaddon] client received missing list, size=" + message.stacks.size());
             Minecraft.getMinecraft().addScheduledTask(() -> {
                 EntityPlayer player = Minecraft.getMinecraft().player;
                 if (player == null) {

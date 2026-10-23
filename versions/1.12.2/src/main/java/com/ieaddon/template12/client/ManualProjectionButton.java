@@ -98,9 +98,6 @@ public final class ManualProjectionButton {
         ClientProjection.begin(multiblock);
         if (mc.player != null) {
             mc.player.sendMessage(new TextComponentString(
-                    TextFormatting.GRAY + "调试: 结构=[" + multiblock.getUniqueName()
-                            + "] 客户端列表=" + blusunrize.immersiveengineering.api.MultiblockHandler.getMultiblocks().size()));
-            mc.player.sendMessage(new TextComponentString(
                     TextFormatting.GOLD + "投影已生成：准星定位，右键自动搭建，左键取消"));
         }
     }

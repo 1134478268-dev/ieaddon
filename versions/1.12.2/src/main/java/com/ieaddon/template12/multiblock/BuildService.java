@@ -89,7 +89,6 @@ public final class BuildService {
                 stacks.add(entry.stack);
                 counts.add(entry.count);
             }
-            System.out.println("[ieaddon] server sending missing list, size=" + stacks.size());
             com.ieaddon.template12.network.ModNetwork.CHANNEL.sendTo(
                     new com.ieaddon.template12.network.MissingMessage(stacks, counts), player);
             return;
@@ -248,15 +247,6 @@ public final class BuildService {
             }
         }
         return null;
-    }
-
-    /** 用 TextComponentTranslation 让客户端翻译，服务端没有语言表。 */
-    private static net.minecraft.util.text.ITextComponent nameOf(ItemStack stack) {
-        String key = stack.getItem().getTranslationKey(stack);
-        while (key.endsWith(".")) {
-            key = key.substring(0, key.length() - 1);
-        }
-        return new net.minecraft.util.text.TextComponentTranslation(key + ".name");
     }
 
     private static void addCost(List<CostEntry> cost, ItemStack stack) {
