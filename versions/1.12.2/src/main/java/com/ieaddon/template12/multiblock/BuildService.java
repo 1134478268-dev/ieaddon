@@ -102,7 +102,7 @@ public final class BuildService {
             }
         }
 
-        BuildTask task = new BuildTask(player.getUUID(), world);
+        BuildTask task = new BuildTask(player.getUniqueID(), world);
         for (Map.Entry<BlockPos, IBlockState> entry : toPlace.entrySet()) {
             task.enqueue(entry.getKey(), entry.getValue());
         }
@@ -152,9 +152,12 @@ public final class BuildService {
         if (s == null) {
             return true;
         }
-        BlockPos wheelPos = pos.offset(side, 4);
+        BlockPos wheelPos = pos.offset(side, 4).offset(side.rotateY(), 1).up();
         int sizeH = s.length;
         int sizeW = s[0].length;
+        // IE 斗轮 w 方向：NORTH +x、SOUTH -x、WEST +z、EAST -z
+        int wx = side == EnumFacing.NORTH ? 1 : side == EnumFacing.SOUTH ? -1 : 0;
+        int wz = side == EnumFacing.WEST ? 1 : side == EnumFacing.EAST ? -1 : 0;
         for (int h = 0; h < sizeH; h++) {
             for (int w = 0; w < sizeW; w++) {
                 ItemStack stack = s[h][w][0];
@@ -165,7 +168,8 @@ public final class BuildService {
                 if (state == null) {
                     continue;
                 }
-                BlockPos p = ProjectionMath.worldPos(wheelPos, side, 0, h - sizeH / 2, w - sizeW / 2);
+                int off = w - sizeW / 2;
+                BlockPos p = wheelPos.add(wx * off, h - sizeH / 2, wz * off);
                 if (!addOne(player, world, p, state, stack, toPlace, cost)) {
                     return false;
                 }

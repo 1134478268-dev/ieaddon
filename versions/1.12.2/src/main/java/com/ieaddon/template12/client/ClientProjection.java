@@ -112,11 +112,13 @@ public final class ClientProjection {
             center = null;
             return;
         }
-        // pos = 准星方块上表面（结构从这里往上长）
-        center = mc.objectMouseOver.getBlockPos().up();
         if (mc.player != null) {
             facing = mc.player.getHorizontalFacing();
         }
+        // 实测校准：相对准星方块再往"右"1 格、往上 1 格
+        center = mc.objectMouseOver.getBlockPos()
+                .up(2)
+                .offset(facing.rotateY(), 1);
     }
 
     public static void fix() {
@@ -169,13 +171,28 @@ public final class ClientProjection {
         if (wheelStructure == null) {
             return;
         }
-        BlockPos wheelCenter = center.offset(facing, 4);
+        BlockPos wheelCenter = center.offset(facing, 4).offset(facing.rotateY(), 1).up();
         int sizeH = wheelStructure.length;
         int sizeW = wheelStructure[0].length;
+        // IE 的斗轮 w 方向：NORTH +x、SOUTH -x、WEST +z、EAST -z（不是简单的 rotateY）
+        int wx = facing == EnumFacing.NORTH ? 1 : facing == EnumFacing.SOUTH ? -1 : 0;
+        int wz = facing == EnumFacing.WEST ? 1 : facing == EnumFacing.EAST ? -1 : 0;
         for (int h = 0; h < sizeH; h++) {
             for (int w = 0; w < sizeW; w++) {
                 ItemStack stack = wheelStructure[h][w][0];
-                addIfMissing(out, mc, stack, 0, h - sizeH / 2, w - sizeW / 2, wheelCenter);
+                if (stack == null || stack.isEmpty()) {
+                    continue;
+                }
+                IBlockState expected = expectedState(stack);
+                if (expected == null) {
+                    continue;
+                }
+                int off = w - sizeW / 2;
+                BlockPos pos = wheelCenter.add(wx * off, h - sizeH / 2, wz * off);
+                if (mc.world != null && mc.world.getBlockState(pos) == expected) {
+                    continue;
+                }
+                out.add(new Entry(pos, expected));
             }
         }
     }
