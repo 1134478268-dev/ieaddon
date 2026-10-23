@@ -3,6 +3,7 @@ package com.ieaddon.template12.client;
 import blusunrize.immersiveengineering.api.MultiblockHandler;
 import blusunrize.immersiveengineering.api.MultiblockHandler.IMultiblock;
 import com.ieaddon.template12.multiblock.ProjectionMath;
+import com.ieaddon.template12.multiblock.StructureLayout;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.client.Minecraft;
@@ -31,6 +32,7 @@ public final class ClientProjection {
     private static final int MAX_LIFT = 8;
 
     private static IMultiblock multiblock;
+    private static IMultiblock wheelMultiblock;
     private static int index = -1;
     private static ItemStack[][][] structure;
     private static ItemStack[][][] wheelStructure;
@@ -61,9 +63,11 @@ public final class ClientProjection {
             IMultiblock wheel = find(all, "IE:BucketWheel");
             structure = exca != null ? exca.getStructureManual() : resolved.getStructureManual();
             wheelStructure = wheel != null ? wheel.getStructureManual() : null;
+            wheelMultiblock = wheel;
         } else {
             structure = resolved.getStructureManual();
             wheelStructure = null;
+            wheelMultiblock = null;
         }
         center = null;
         fixed = false;
@@ -140,9 +144,10 @@ public final class ClientProjection {
         }
         for (int offset = 0; offset <= MAX_LIFT; offset++) {
             boolean blocked = false;
-            for (Entry entry : entries(offset)) {
-                IBlockState actual = mc.world.getBlockState(entry.pos);
-                if (!actual.getBlock().isAir(actual, mc.world, entry.pos)) {
+            for (StructureLayout.Placement p
+                    : StructureLayout.layout(multiblock, wheelMultiblock, center, facing, offset, true)) {
+                IBlockState actual = mc.world.getBlockState(p.pos);
+                if (!actual.getBlock().isAir(actual, mc.world, p.pos)) {
                     blocked = true;
                     break;
                 }
@@ -170,121 +175,19 @@ public final class ClientProjection {
     }
 
     public static List<Entry> entries() {
-        return entries(lift);
-    }
-
-    private static List<Entry> entries(int yOffset) {
         List<Entry> out = new ArrayList<>();
-        if (structure == null || center == null) {
+        if (multiblock == null || center == null) {
             return out;
         }
         Minecraft mc = Minecraft.getMinecraft();
-        if (name.contains("Excavator")) {
-            addExcavator(out, mc, yOffset);
-            addWheel(out, mc, yOffset);
-        } else {
-            addGeneric(out, mc, yOffset);
+        for (StructureLayout.Placement p
+                : StructureLayout.layout(multiblock, wheelMultiblock, center, facing, lift, true)) {
+            if (mc.world != null && mc.world.getBlockState(p.pos) == p.state) {
+                continue;
+            }
+            out.add(new Entry(p.pos, p.state));
         }
         return out;
-    }
-
-    private static void addExcavator(List<Entry> out, Minecraft mc, int yOffset) {
-        int sizeH = structure.length;
-        int sizeL = structure[0].length;
-        int sizeW = structure[0][0].length;
-        for (int l = 0; l < sizeL; l++) {
-            for (int w = 0; w < sizeW; w++) {
-                for (int h = 0; h < sizeH; h++) {
-                    if (l > 0 && w == sizeW / 2) {
-                        continue;
-                    }
-                    ItemStack stack = structure[h][l][w];
-                    addIfMissing(out, mc, stack, l, h - sizeH / 2 + yOffset, w - sizeW / 2, center);
-                }
-            }
-        }
-    }
-
-    private static void addWheel(List<Entry> out, Minecraft mc, int yOffset) {
-        if (wheelStructure == null) {
-            return;
-        }
-        BlockPos wheelCenter = center.offset(facing, 4);
-        int sizeH = wheelStructure.length;
-        int sizeW = wheelStructure[0].length;
-        EnumFacing wheelSide = facing.rotateYCCW();
-        int wx = wheelSide == EnumFacing.NORTH ? 1 : wheelSide == EnumFacing.SOUTH ? -1 : 0;
-        int wz = wheelSide == EnumFacing.WEST ? 1 : wheelSide == EnumFacing.EAST ? -1 : 0;
-        for (int h = 0; h < sizeH; h++) {
-            for (int w = 0; w < sizeW; w++) {
-                ItemStack stack = wheelStructure[h][w][0];
-                if (stack == null || stack.isEmpty()) {
-                    continue;
-                }
-                IBlockState expected = expectedState(stack);
-                if (expected == null) {
-                    continue;
-                }
-                int off = w - sizeW / 2;
-                BlockPos pos = wheelCenter.add(wx * off, h - sizeH / 2 + yOffset, wz * off);
-                if (mc.world != null && mc.world.getBlockState(pos) == expected) {
-                    continue;
-                }
-                out.add(new Entry(pos, expected));
-            }
-        }
-    }
-
-    private static void addGeneric(List<Entry> out, Minecraft mc, int yOffset) {
-        int sizeH = structure.length;
-        int sizeL = structure[0].length;
-        int sizeW = structure[0][0].length;
-        for (int h = 0; h < sizeH; h++) {
-            for (int l = 0; l < sizeL; l++) {
-                for (int w = 0; w < sizeW; w++) {
-                    ItemStack stack = structure[h][l][w];
-                    addIfMissing(out, mc, stack, l - sizeL / 2, h - sizeH / 2 + yOffset, w - sizeW / 2, center);
-                }
-            }
-        }
-    }
-
-    /** 传送带不投影，由玩家自己放（IE 的 conveyor 状态在 NBT 里，自动摆容易朝向错）。 */
-    private static boolean isConveyor(ItemStack stack) {
-        net.minecraft.util.ResourceLocation id = stack.getItem().getRegistryName();
-        return id != null && id.getPath().contains("conveyor");
-    }
-
-    private static void addIfMissing(List<Entry> out, Minecraft mc, ItemStack stack,
-                                     int dx, int dy, int dz, BlockPos base) {
-        if (stack == null || stack.isEmpty() || isConveyor(stack)) {
-            return;
-        }
-        IBlockState expected = expectedState(stack);
-        if (expected == null) {
-            return;
-        }
-        BlockPos pos = ProjectionMath.worldPos(base, facing, dx, dy, dz);
-        if (mc.world != null && mc.world.getBlockState(pos) == expected) {
-            return;
-        }
-        out.add(new Entry(pos, expected));
-    }
-
-    @Nullable
-    public static IBlockState expectedState(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return null;
-        }
-        Block block = Block.getBlockFromItem(stack.getItem());
-        if (block == null) {
-            return null;
-        }
-        try {
-            return block.getStateFromMeta(stack.getMetadata());
-        } catch (RuntimeException ex) {
-            return block.getDefaultState();
-        }
     }
 
     public static final class Entry {

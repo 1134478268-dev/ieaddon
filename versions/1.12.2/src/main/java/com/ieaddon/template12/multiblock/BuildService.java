@@ -17,16 +17,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 服务端执行"自动摆放方块"（不负责成型）。
+ * 服务端搭建：材料校验/扣除，然后交给 {@link BuildTasks} 逐块放置。
  *
- * <p>坐标严格照抄 IE 的 createStructure：
- * <ul>
- *   <li>挖掘机：{@code pos + side*l + side.rotateY()*w + (0,h,0)}；</li>
- *   <li>斗轮：中心 {@code pos + side*4}，{@code + (0,h,0) + rotateY*w}；</li>
- *   <li>其他结构：按数组中心映射。</li>
- * </ul>
+ * <p>方块位置全部来自 {@link StructureLayout}，与客户端投影同源。
  */
 public final class BuildService {
+    private static int skippedConveyors;
+
     private BuildService() {
     }
 
@@ -36,38 +33,35 @@ public final class BuildService {
         World world = player.world;
         List<IMultiblock> all = MultiblockHandler.getMultiblocks();
 
+        IMultiblock main;
+        IMultiblock wheel = null;
+        if (requestedName != null && requestedName.contains("Excavator")) {
+            main = findByName("IE:Excavator");
+            wheel = findByName("IE:BucketWheel");
+        } else {
+            main = findByName(requestedName);
+            if (main == null && index >= 0 && index < all.size()) {
+                main = all.get(index);
+            }
+        }
+        if (main == null) {
+            player.sendMessage(new TextComponentString(
+                    TextFormatting.RED + "找不到结构 [" + requestedName + "]"));
+            return;
+        }
+
         Map<BlockPos, IBlockState> toPlace = new LinkedHashMap<>();
         List<CostEntry> cost = new ArrayList<>();
-
-        if (requestedName != null && requestedName.contains("Excavator")) {
-            IMultiblock exca = findByName("IE:Excavator");
-            IMultiblock wheel = findByName("IE:BucketWheel");
-            if (exca == null) {
-                player.sendMessage(new TextComponentString(TextFormatting.RED + "服务端找不到挖掘机结构"));
-                return;
+        for (StructureLayout.Placement p : StructureLayout.layout(main, wheel, center, facing, lift, false)) {
+            if (p.isConveyor()) {
+                skippedConveyors++;
+                continue;
             }
-            // 先摆斗轮（中心是钢块），再摆机器主体，视觉上"从钢块往上长"
-            if (wheel != null && !addWheel(player, world, wheel, center, facing, lift, toPlace, cost)) {
-                return;
+            if (world.getBlockState(p.pos) == p.state) {
+                continue;
             }
-            if (!addExcavator(player, world, exca, center, facing, lift, toPlace, cost)) {
-                return;
-            }
-        } else {
-            IMultiblock multiblock = null;
-            if (requestedName != null && !requestedName.isEmpty()) {
-                multiblock = findByName(requestedName);
-            }
-            if (multiblock == null && index >= 0 && index < all.size()) {
-                multiblock = all.get(index);
-            }
-            if (multiblock == null) {
-                player.sendMessage(new TextComponentString(TextFormatting.RED + "找不到结构 [" + requestedName + "]"));
-                return;
-            }
-            if (!addGeneric(player, world, multiblock, center, facing, lift, toPlace, cost)) {
-                return;
-            }
+            toPlace.put(p.pos, p.state);
+            addCost(cost, new ItemStack(p.stack.getItem(), 1, p.stack.getMetadata()));
         }
 
         if (toPlace.isEmpty()) {
@@ -83,8 +77,8 @@ public final class BuildService {
             }
         }
         if (!missing.isEmpty()) {
-            java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
-            java.util.List<Integer> counts = new java.util.ArrayList<>();
+            List<ItemStack> stacks = new ArrayList<>();
+            List<Integer> counts = new ArrayList<>();
             for (CostEntry entry : missing) {
                 stacks.add(entry.stack);
                 counts.add(entry.count);
@@ -119,128 +113,10 @@ public final class BuildService {
         }
     }
 
-    private static boolean addExcavator(EntityPlayerMP player, World world, IMultiblock multiblock,
-                                        BlockPos pos, EnumFacing side, int lift,
-                                        Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
-        ItemStack[][][] s = multiblock.getStructureManual();
-        if (s == null) {
-            return true;
-        }
-        int sizeH = s.length;
-        int sizeL = s[0].length;
-        int sizeW = s[0][0].length;
-        for (int l = 0; l < sizeL; l++) {
-            for (int w = 0; w < sizeW; w++) {
-                for (int h = 0; h < sizeH; h++) {
-                    if (l > 0 && w == sizeW / 2) {
-                        continue;
-                    }
-                    ItemStack stack = s[h][l][w];
-                    if (stack == null || stack.isEmpty()) {
-                        continue;
-                    }
-                    IBlockState state = multiblock.getBlockstateFromStack(0, stack);
-                    if (state == null) {
-                        continue;
-                    }
-                    BlockPos p = ProjectionMath.worldPos(pos, side, l, h - sizeH / 2 + lift, w - sizeW / 2);
-                    if (!addOne(player, world, p, state, stack, toPlace, cost)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    private static boolean addWheel(EntityPlayerMP player, World world, IMultiblock multiblock,
-                                    BlockPos pos, EnumFacing side, int lift,
-                                    Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
-        ItemStack[][][] s = multiblock.getStructureManual();
-        if (s == null) {
-            return true;
-        }
-        BlockPos wheelPos = pos.offset(side, 4);
-        int sizeH = s.length;
-        int sizeW = s[0].length;
-        // IE 调用斗轮时传的是 side.rotateYCCW()
-        EnumFacing wheelSide = side.rotateYCCW();
-        int wx = wheelSide == EnumFacing.NORTH ? 1 : wheelSide == EnumFacing.SOUTH ? -1 : 0;
-        int wz = wheelSide == EnumFacing.WEST ? 1 : wheelSide == EnumFacing.EAST ? -1 : 0;
-        for (int h = 0; h < sizeH; h++) {
-            for (int w = 0; w < sizeW; w++) {
-                ItemStack stack = s[h][w][0];
-                if (stack == null || stack.isEmpty()) {
-                    continue;
-                }
-                IBlockState state = multiblock.getBlockstateFromStack(0, stack);
-                if (state == null) {
-                    continue;
-                }
-                int off = w - sizeW / 2;
-                BlockPos p = wheelPos.add(wx * off, h - sizeH / 2 + lift, wz * off);
-                if (!addOne(player, world, p, state, stack, toPlace, cost)) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    private static boolean addGeneric(EntityPlayerMP player, World world, IMultiblock multiblock,
-                                      BlockPos pos, EnumFacing side, int lift,
-                                      Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
-        ItemStack[][][] s = multiblock.getStructureManual();
-        if (s == null) {
-            return true;
-        }
-        int sizeH = s.length;
-        int sizeL = s[0].length;
-        int sizeW = s[0][0].length;
-        for (int h = 0; h < sizeH; h++) {
-            for (int l = 0; l < sizeL; l++) {
-                for (int w = 0; w < sizeW; w++) {
-                    ItemStack stack = s[h][l][w];
-                    if (stack == null || stack.isEmpty()) {
-                        continue;
-                    }
-                    IBlockState state = multiblock.getBlockstateFromStack(0, stack);
-                    if (state == null) {
-                        continue;
-                    }
-                    BlockPos p = ProjectionMath.worldPos(pos, side,
-                            l - sizeL / 2, h - sizeH / 2 + lift, w - sizeW / 2);
-                    if (!addOne(player, world, p, state, stack, toPlace, cost)) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    private static int skippedConveyors;
-
-    private static boolean isConveyor(ItemStack stack) {
-        net.minecraft.util.ResourceLocation id = stack.getItem().getRegistryName();
-        return id != null && id.getPath().contains("conveyor");
-    }
-
-    private static boolean addOne(EntityPlayerMP player, World world, BlockPos pos, IBlockState state,
-                                  ItemStack stack, Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
-        if (isConveyor(stack)) {
-            skippedConveyors++;
-            return true;
-        }
-        if (world.getBlockState(pos) == state) {
-            return true;
-        }
-        toPlace.put(pos, state);
-        addCost(cost, new ItemStack(stack.getItem(), 1, stack.getMetadata()));
-        return true;
-    }
-
     private static IMultiblock findByName(String name) {
+        if (name == null) {
+            return null;
+        }
         for (IMultiblock candidate : MultiblockHandler.getMultiblocks()) {
             if (candidate.getUniqueName().equals(name)) {
                 return candidate;
