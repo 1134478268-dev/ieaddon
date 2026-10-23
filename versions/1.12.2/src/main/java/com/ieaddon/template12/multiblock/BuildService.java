@@ -82,11 +82,14 @@ public final class BuildService {
             }
         }
         if (!missing.isEmpty()) {
-            player.sendMessage(new TextComponentString(TextFormatting.RED + "材料不足，还缺："));
+            java.util.List<ItemStack> stacks = new java.util.ArrayList<>();
+            java.util.List<Integer> counts = new java.util.ArrayList<>();
             for (CostEntry entry : missing) {
-                player.sendMessage(new TextComponentString(
-                        TextFormatting.GRAY + "  " + entry.count + "x ").appendSibling(nameOf(entry.stack)));
+                stacks.add(entry.stack);
+                counts.add(entry.count);
             }
+            com.ieaddon.template12.network.ModNetwork.CHANNEL.sendTo(
+                    new com.ieaddon.template12.network.MissingMessage(stacks, counts), player);
             return;
         }
 

@@ -15,5 +15,6 @@ public final class ModNetwork {
 
     public static void register() {
         CHANNEL.registerMessage(BuildRequestMessage.Handler.class, BuildRequestMessage.class, 0, Side.SERVER);
+        CHANNEL.registerMessage(MissingMessage.Handler.class, MissingMessage.class, 1, Side.CLIENT);
     }
 }
