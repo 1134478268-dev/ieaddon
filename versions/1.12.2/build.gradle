@@ -1,0 +1,57 @@
+buildscript {
+    repositories {
+        // Gradle 4.9 不支持 content{} 过滤器，只能用仓库顺序：
+        // 通用库（diff4j / jAstyle / httpclient…）由 Maven Central 命中，
+        // ForgeGradle / forgeflower 由官方 Forge 仓库命中。
+        mavenCentral()
+        maven { url = 'https://maven.minecraftforge.net' }
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:2.3-SNAPSHOT'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle.forge'
+
+version = mod_version
+group = mod_group_id
+archivesBaseName = mod_id
+
+sourceCompatibility = targetCompatibility = '1.8'
+
+minecraft {
+    version = "${minecraft_version}-${forge_version}"
+    runDir = 'run'
+    mappings = 'stable_39'
+}
+
+repositories {
+    // MC / Forge 制品走 BMCLAPI（比官方快一个数量级）
+    maven { url = 'https://bmclapi2.bangbang93.com/maven' }
+    mavenCentral()
+    // 本地 Maven 仓库：FG 2.3 的 deobfCompile 只接受 maven 坐标，不接受 files()
+    maven { url = 'file:///D:/dev/projects/IEAddon/repo' }
+}
+
+dependencies {
+    // IE 1.12.2：deobf 把 SRG 名映射回 MCP 名
+    deobfCompile "blusunrize.immersiveengineering:ImmersiveEngineering:0.12-98"
+}
+
+processResources {
+    inputs.property 'version', project.version
+    inputs.property 'mcversion', project.minecraft.version
+
+    from(sourceSets.main.resources.srcDirs) {
+        include 'mcmod.info'
+        expand 'version': project.version, 'mcversion': project.minecraft.version
+    }
+    from(sourceSets.main.resources.srcDirs) {
+        exclude 'mcmod.info'
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}

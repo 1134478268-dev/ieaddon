@@ -1,0 +1,16 @@
+[
+  {
+    "modid": "ieaddon",
+    "name": "IE Addon Template",
+    "description": "An Immersive Engineering addon template.",
+    "version": "${version}",
+    "mcversion": "${mcversion}",
+    "url": "",
+    "updateUrl": "",
+    "authorList": ["YourName"],
+    "credits": "Immersive Engineering by BluSunrize",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": ["immersiveengineering"]
+  }
+]

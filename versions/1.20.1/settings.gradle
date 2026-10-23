@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        // BMCLAPI 镜像：国内访问 Forge maven 的唯一可行方式
+        // （官方 maven.minecraftforge.net 实测只有 4KB/s）
+        maven { url = 'https://bmclapi2.bangbang93.com/maven' }
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
+}
+
+rootProject.name = 'ieaddon-1.20.1'

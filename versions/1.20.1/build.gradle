@@ -1,0 +1,100 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    // 固定版本：版本范围会触发 maven-metadata 查询，在镜像上容易超时
+    id 'net.minecraftforge.gradle' version '6.0.24'
+}
+
+version = mod_version
+group = mod_group_id
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: 'official', version: minecraft_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+    }
+}
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+repositories {
+    // IE 的本地 jar 仓库（flatDir 才能让 ForgeGradle 正确 deobf）
+    flatDir { dirs "../../libs" }
+    // BMCLAPI 镜像：国内访问 Forge maven 明显更快
+    maven { url = 'https://bmclapi2.bangbang93.com/maven' }
+    mavenCentral()
+    // CurseMaven：如果以后想换成联网依赖，把 libs 里的 jar 换成 curse.maven 坐标即可
+    maven {
+        url = 'https://cfa2.cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // ---- Immersive Engineering ----
+    // flatDir + 坐标：ForgeGradle 会把发布 jar 里的 SRG 名映射回 official 名
+    compileOnly fg.deobf("blusunrize.immersiveengineering:ImmersiveEngineering:10.2.0")
+}
+
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version: minecraft_version,
+            minecraft_version_range: '[1.20.1,1.21)',
+            forge_version: forge_version,
+            forge_version_range: '[47,)',
+            loader_version_range: '[47,)',
+            mod_id: mod_id,
+            mod_name: mod_name,
+            mod_license: mod_license,
+            mod_version: mod_version,
+            mod_authors: mod_authors,
+            mod_description: mod_description
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml']) {
+        expand replaceProperties
+    }
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'     : mod_id,
+                'Specification-Vendor'    : mod_authors,
+                'Specification-Version'   : '1',
+                'Implementation-Title'    : project.name,
+                'Implementation-Version'  : project.jar.archiveVersion,
+                'Implementation-Vendor'   : mod_authors
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}

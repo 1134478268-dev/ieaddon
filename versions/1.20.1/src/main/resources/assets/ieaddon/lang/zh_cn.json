@@ -1,0 +1,16 @@
+{
+  "itemGroup.ieaddon": "沉浸工程附属模板",
+  "item.ieaddon.my_tool": "工程师多功能工具",
+  "item.ieaddon.my_upgrade": "效率升级",
+  "item.ieaddon.my_upgrade.desc": "在工程师工作台里安装，可提升工具性能。",
+  "multiblock.ieaddon.project_button": "投影",
+  "multiblock.ieaddon.no_match": "这里没有可搭建的多方块结构（要对准核心方块）",
+  "multiblock.ieaddon.plan": "将搭建 %s，需放置 %s 个方块：%s",
+  "multiblock.ieaddon.missing": "材料不足，还缺 %s",
+  "multiblock.ieaddon.multiple": "该核心方块可用于 %s 个结构，已选择：%s",
+  "multiblock.ieaddon.free": "无需材料",
+  "multiblock.ieaddon.projection_started": "已开始投影：%s，还差 %s 个方块（按轮廓放置，放齐自动成型）",
+  "multiblock.ieaddon.projection_complete": "%s 已成型",
+  "multiblock.ieaddon.projection_cancelled": "投影已取消",
+  "multiblock.ieaddon.projection_too_far": "离投影太远（%s 格），投影已自动取消"
+}

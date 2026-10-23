@@ -1,0 +1,25 @@
+# ---- 构建产物 ----
+.gradle/
+build/
+**/build/
+
+# ---- 游戏运行环境（246 MB，不入库）----
+run-1.12.2/
+run/
+run-1.20.1/
+
+# ---- 离线参考源码（IE 仓库副本，110 MB，可随时重新 clone）----
+docs/IE-src-1.12.2/
+docs/IE-src-1.20.1/
+docs/IE-src-1.21.1/
+
+# ---- 依赖 jar（IE 本体，不进仓库）----
+libs/
+repo/
+
+# ---- 临时 / 日志 ----
+*.log
+*.bak
+.idea/
+*.iml
+out/

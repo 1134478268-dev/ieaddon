@@ -1,0 +1,16 @@
+{
+  "itemGroup.ieaddon": "IE Addon Template",
+  "item.ieaddon.my_tool": "Engineer's Multi Tool",
+  "item.ieaddon.my_upgrade": "Efficiency Upgrade",
+  "item.ieaddon.my_upgrade.desc": "Install it in the Engineer's Workbench to boost the tool.",
+  "multiblock.ieaddon.project_button": "Project",
+  "multiblock.ieaddon.no_match": "No multiblock can be built here (aim at the core block)",
+  "multiblock.ieaddon.plan": "Plan: %s, %s blocks to place: %s",
+  "multiblock.ieaddon.missing": "Missing materials: %s",
+  "multiblock.ieaddon.multiple": "This core block matches %s structures, picked: %s",
+  "multiblock.ieaddon.free": "no materials needed",
+  "multiblock.ieaddon.projection_started": "Projection started: %s, %s blocks remaining (place along the outline, it forms when complete)",
+  "multiblock.ieaddon.projection_complete": "%s formed",
+  "multiblock.ieaddon.projection_cancelled": "Projection cancelled",
+  "multiblock.ieaddon.projection_too_far": "Too far from the projection (%s blocks), cancelled"
+}
