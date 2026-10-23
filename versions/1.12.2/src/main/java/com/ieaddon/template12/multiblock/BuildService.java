@@ -201,7 +201,7 @@ public final class BuildService {
                         continue;
                     }
                     BlockPos p = ProjectionMath.worldPos(pos, side,
-                            l - sizeL / 2, h - sizeH / 2, w - sizeW / 2);
+                            l - sizeL / 2, h - sizeH / 2 + lift, w - sizeW / 2);
                     if (!addOne(player, world, p, state, stack, toPlace, cost)) {
                         return false;
                     }
