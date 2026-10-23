@@ -254,7 +254,7 @@ public final class BuildService {
     }
 
     private static boolean matches(ItemStack a, ItemStack b) {
-        return ItemStack.areItemsEqual(a, b) && ItemStack.areItemStackTagsEqual(a, b);
+        return ItemStack.areItemsEqual(a, b);
     }
 
     private static int countInInventory(EntityPlayerMP player, ItemStack wanted) {
