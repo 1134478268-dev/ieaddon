@@ -18,11 +18,13 @@ public final class BuildTask {
     public int placed;
     public int skipped;
     public final int total;
+    public final net.minecraft.util.math.BlockPos anchor;
 
-    public BuildTask(UUID playerId, World world) {
+    public BuildTask(UUID playerId, World world, net.minecraft.util.math.BlockPos anchor) {
         this.playerId = playerId;
         this.world = world;
         this.total = 0;
+        this.anchor = anchor;
     }
 
     public void enqueue(BlockPos pos, IBlockState state) {

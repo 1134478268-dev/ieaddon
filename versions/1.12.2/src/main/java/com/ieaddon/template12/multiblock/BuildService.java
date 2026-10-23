@@ -106,7 +106,7 @@ public final class BuildService {
             }
         }
 
-        BuildTask task = new BuildTask(player.getUniqueID(), world);
+        BuildTask task = new BuildTask(player.getUniqueID(), world, center.up(lift));
         for (Map.Entry<BlockPos, IBlockState> entry : toPlace.entrySet()) {
             task.enqueue(entry.getKey(), entry.getValue());
         }

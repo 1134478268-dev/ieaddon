@@ -52,10 +52,12 @@ public final class BuildTasks {
             }
             EntityPlayerMP player = server.getPlayerList().getPlayerByUUID(task.playerId);
             if (player != null) {
+                String where = task.anchor == null ? ""
+                        : "（" + task.anchor.getX() + ", " + task.anchor.getY() + ", " + task.anchor.getZ() + "）";
                 player.sendMessage(new TextComponentString(
                         TextFormatting.GREEN + "搭建完成：放置 " + task.placed + " 个方块"
                                 + (task.skipped > 0 ? "，跳过 " + task.skipped + " 个受阻位置" : "")
-                                + "，请用工程师锤敲击成型"));
+                                + "。请用工程师锤敲击 " + where + " 的方块成型"));
             }
             it.remove();
         }
