@@ -85,7 +85,7 @@ public final class BuildService {
             player.sendMessage(new TextComponentString(TextFormatting.RED + "材料不足，还缺："));
             for (CostEntry entry : missing) {
                 player.sendMessage(new TextComponentString(
-                        TextFormatting.GRAY + "  " + entry.count + "x " + entry.stack.getDisplayName()));
+                        TextFormatting.GRAY + "  " + entry.count + "x ").appendSibling(nameOf(entry.stack)));
             }
             return;
         }
@@ -228,6 +228,15 @@ public final class BuildService {
             }
         }
         return null;
+    }
+
+    /** 用 TextComponentTranslation 让客户端翻译，服务端没有语言表。 */
+    private static net.minecraft.util.text.ITextComponent nameOf(ItemStack stack) {
+        String key = stack.getItem().getTranslationKey(stack);
+        while (key.endsWith(".")) {
+            key = key.substring(0, key.length() - 1);
+        }
+        return new net.minecraft.util.text.TextComponentTranslation(key + ".name");
     }
 
     private static void addCost(List<CostEntry> cost, ItemStack stack) {
