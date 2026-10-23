@@ -63,7 +63,7 @@ public final class ClientProjection {
         center = null;
         fixed = false;
         Minecraft mc = Minecraft.getMinecraft();
-        facing = mc.player != null ? mc.player.getHorizontalFacing().rotateY() : EnumFacing.NORTH;
+        facing = mc.player != null ? mc.player.getHorizontalFacing() : EnumFacing.NORTH;
     }
 
     private static IMultiblock find(List<IMultiblock> all, String key) {
@@ -113,12 +113,10 @@ public final class ClientProjection {
             return;
         }
         if (mc.player != null) {
-            facing = mc.player.getHorizontalFacing().rotateY();
+            facing = mc.player.getHorizontalFacing();
         }
-        // 实测校准：相对准星方块再往"右"1 格、往上 1 格
-        center = mc.objectMouseOver.getBlockPos()
-                .up(2)
-                .offset(facing.rotateY(), 1);
+        // pos = 准星方块（与 IE createStructure 的 pos 语义一致）
+        center = mc.objectMouseOver.getBlockPos();
     }
 
     public static void fix() {
@@ -171,7 +169,7 @@ public final class ClientProjection {
         if (wheelStructure == null) {
             return;
         }
-        BlockPos wheelCenter = center.offset(facing, 4).offset(facing.rotateY(), 1).up();
+        BlockPos wheelCenter = center.offset(facing, 4);
         int sizeH = wheelStructure.length;
         int sizeW = wheelStructure[0].length;
         // IE 调用斗轮时传的是 side.rotateYCCW()，不是挖掘机的 side
