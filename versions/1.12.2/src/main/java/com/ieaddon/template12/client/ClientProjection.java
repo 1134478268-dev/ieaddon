@@ -16,72 +16,63 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 1.12.2 的投影状态：半透明预览 + 自动搭建的位置计算。
+ * 1.12.2 的投影状态（半透明预览）。
  *
- * <p>位置规则：
+ * <p>坐标严格照抄 IE 的 createStructure：
  * <ul>
- *   <li>以准星命中的方块为结构中心；</li>
- *   <li>如果结构会与已有方块重叠，整体向上抬，直到没有阻挡。</li>
+ *   <li>挖掘机：{@code pos + side*l + side.rotateY()*w + (0,h,0)}，数组 {@code [h+1][l][w+1]}；</li>
+ *   <li>斗轮：中心 {@code pos + side*4}，{@code + (0,h,0) + rotateY*w}，数组 {@code [h+3][w+3][0]}；</li>
+ *   <li>其他结构：按数组中心映射。</li>
  * </ul>
  */
 public final class ClientProjection {
-    private static final int MAX_LIFT = 16;
-
     private static IMultiblock multiblock;
     private static int index = -1;
     private static ItemStack[][][] structure;
+    private static ItemStack[][][] wheelStructure;
+    private static String name = "";
     private static BlockPos center;
     private static EnumFacing facing = EnumFacing.NORTH;
     private static boolean fixed;
-    private static int lift;
 
     private ClientProjection() {
     }
 
     public static void begin(IMultiblock mb) {
-        java.util.List<IMultiblock> all = MultiblockHandler.getMultiblocks();
-        String name = mb.getUniqueName();
-        IMultiblock resolved = null;
-        int idx = -1;
-
-        // 手册里的"完整展示"结构（如 IE:ExcavatorDemo）不在服务端注册列表里，
-        // 去掉 Demo 后缀映射到真实结构
-        for (int i = 0; i < all.size(); i++) {
-            if (all.get(i).getUniqueName().equals(name)) {
-                resolved = all.get(i);
-                idx = i;
-                break;
-            }
-        }
+        name = mb.getUniqueName();
+        List<IMultiblock> all = MultiblockHandler.getMultiblocks();
+        IMultiblock resolved = find(all, name);
         if (resolved == null && name.endsWith("Demo")) {
-            String base = name.substring(0, name.length() - "Demo".length());
-            for (int i = 0; i < all.size(); i++) {
-                if (all.get(i).getUniqueName().equals(base)) {
-                    resolved = all.get(i);
-                    idx = i;
-                    break;
-                }
-            }
+            resolved = find(all, name.substring(0, name.length() - 4));
         }
         if (resolved == null) {
-            resolved = mb; // 保底：至少能显示投影
+            resolved = mb;
         }
-
         multiblock = resolved;
-        index = idx;
-        // 投影用手册页自己的完整结构（斗轮挖掘机页是 exca+斗轮的合并造型），
-        // 自动搭建时服务端再用真实结构分别摆
-        structure = mb.getStructureManual();
-        if (structure == null) {
+        index = all.indexOf(resolved);
+
+        if (name.contains("Excavator")) {
+            IMultiblock exca = find(all, "IE:Excavator");
+            IMultiblock wheel = find(all, "IE:BucketWheel");
+            structure = exca != null ? exca.getStructureManual() : resolved.getStructureManual();
+            wheelStructure = wheel != null ? wheel.getStructureManual() : null;
+        } else {
             structure = resolved.getStructureManual();
+            wheelStructure = null;
         }
         center = null;
         fixed = false;
-        lift = 0;
         Minecraft mc = Minecraft.getMinecraft();
-        facing = mc.player != null
-                ? mc.player.getHorizontalFacing()
-                : EnumFacing.NORTH;
+        facing = mc.player != null ? mc.player.getHorizontalFacing() : EnumFacing.NORTH;
+    }
+
+    private static IMultiblock find(List<IMultiblock> all, String key) {
+        for (IMultiblock candidate : all) {
+            if (candidate.getUniqueName().equals(key)) {
+                return candidate;
+            }
+        }
+        return null;
     }
 
     public static boolean isActive() {
@@ -93,7 +84,7 @@ public final class ClientProjection {
     }
 
     public static String multiblockName() {
-        return multiblock == null ? "" : multiblock.getUniqueName();
+        return name;
     }
 
     public static int multiblockIndex() {
@@ -109,7 +100,7 @@ public final class ClientProjection {
     }
 
     public static int lift() {
-        return lift;
+        return 0;
     }
 
     public static void update() {
@@ -121,12 +112,11 @@ public final class ClientProjection {
             center = null;
             return;
         }
-        // 基点用准星命中的方块（IE 的 pos 语义），朝向用玩家朝向（IE 的 side）
-        center = mc.objectMouseOver.getBlockPos();
+        // pos = 准星方块上表面（结构从这里往上长）
+        center = mc.objectMouseOver.getBlockPos().up();
         if (mc.player != null) {
             facing = mc.player.getHorizontalFacing();
         }
-        lift = computeLift();
     }
 
     public static void fix() {
@@ -138,82 +128,86 @@ public final class ClientProjection {
     public static void cancel() {
         multiblock = null;
         structure = null;
+        wheelStructure = null;
         center = null;
         fixed = false;
-        lift = 0;
     }
 
-    /** 当前需要渲染的半透明方块（跳过放对的格子）。 */
     public static List<Entry> entries() {
         List<Entry> out = new ArrayList<>();
         if (structure == null || center == null) {
             return out;
         }
         Minecraft mc = Minecraft.getMinecraft();
-        int sizeY = structure.length;
-        int sizeX = structure[0].length;
-        int sizeZ = structure[0][0].length;
-        for (int y = 0; y < sizeY; y++) {
-            for (int x = 0; x < sizeX; x++) {
-                for (int z = 0; z < sizeZ; z++) {
-                    ItemStack stack = structure[y][x][z];
-                    if (stack == null || stack.isEmpty()) {
-                        continue;
-                    }
-                    IBlockState expected = expectedState(stack);
-                    if (expected == null) {
-                        continue;
-                    }
-                    BlockPos pos = ProjectionMath.worldPos(center, facing,
-                            x - sizeX / 2, y + lift, z - sizeZ / 2);
-                    if (mc.world != null && mc.world.getBlockState(pos) == expected) {
-                        continue;
-                    }
-                    out.add(new Entry(pos, expected));
-                }
-            }
+        if (name.contains("Excavator")) {
+            addExcavator(out, mc);
+            addWheel(out, mc);
+        } else {
+            addGeneric(out, mc);
         }
         return out;
     }
 
-    private static int computeLift() {
-        for (int offset = 0; offset <= MAX_LIFT; offset++) {
-            if (!collides(offset)) {
-                return offset;
-            }
-        }
-        return MAX_LIFT;
-    }
-
-    private static boolean collides(int offset) {
-        Minecraft mc = Minecraft.getMinecraft();
-        if (mc.world == null || structure == null || center == null) {
-            return false;
-        }
-        int sizeY = structure.length;
-        int sizeX = structure[0].length;
-        int sizeZ = structure[0][0].length;
-        for (int y = 0; y < sizeY; y++) {
-            for (int x = 0; x < sizeX; x++) {
-                for (int z = 0; z < sizeZ; z++) {
-                    ItemStack stack = structure[y][x][z];
-                    if (stack == null || stack.isEmpty()) {
+    private static void addExcavator(List<Entry> out, Minecraft mc) {
+        int sizeH = structure.length;
+        int sizeL = structure[0].length;
+        int sizeW = structure[0][0].length;
+        for (int l = 0; l < sizeL; l++) {
+            for (int w = 0; w < sizeW; w++) {
+                for (int h = 0; h < sizeH; h++) {
+                    if (l > 0 && w == sizeW / 2) {
                         continue;
                     }
-                    BlockPos pos = ProjectionMath.worldPos(center, facing,
-                            x - sizeX / 2, y + offset, z - sizeZ / 2);
-                    IBlockState expected = expectedState(stack);
-                    IBlockState actual = mc.world.getBlockState(pos);
-                    if (actual == expected) {
-                        continue;
-                    }
-                    if (!actual.getBlock().isAir(actual, mc.world, pos)) {
-                        return true;
-                    }
+                    ItemStack stack = structure[h][l][w];
+                    addIfMissing(out, mc, stack, l, h - sizeH / 2, w - sizeW / 2, center);
                 }
             }
         }
-        return false;
+    }
+
+    private static void addWheel(List<Entry> out, Minecraft mc) {
+        if (wheelStructure == null) {
+            return;
+        }
+        BlockPos wheelCenter = center.offset(facing, 4);
+        int sizeH = wheelStructure.length;
+        int sizeW = wheelStructure[0].length;
+        for (int h = 0; h < sizeH; h++) {
+            for (int w = 0; w < sizeW; w++) {
+                ItemStack stack = wheelStructure[h][w][0];
+                addIfMissing(out, mc, stack, 0, h - sizeH / 2, w - sizeW / 2, wheelCenter);
+            }
+        }
+    }
+
+    private static void addGeneric(List<Entry> out, Minecraft mc) {
+        int sizeH = structure.length;
+        int sizeL = structure[0].length;
+        int sizeW = structure[0][0].length;
+        for (int h = 0; h < sizeH; h++) {
+            for (int l = 0; l < sizeL; l++) {
+                for (int w = 0; w < sizeW; w++) {
+                    ItemStack stack = structure[h][l][w];
+                    addIfMissing(out, mc, stack, l - sizeL / 2, h - sizeH / 2, w - sizeW / 2, center);
+                }
+            }
+        }
+    }
+
+    private static void addIfMissing(List<Entry> out, Minecraft mc, ItemStack stack,
+                                     int dx, int dy, int dz, BlockPos base) {
+        if (stack == null || stack.isEmpty()) {
+            return;
+        }
+        IBlockState expected = expectedState(stack);
+        if (expected == null) {
+            return;
+        }
+        BlockPos pos = ProjectionMath.worldPos(base, facing, dx, dy, dz);
+        if (mc.world != null && mc.world.getBlockState(pos) == expected) {
+            return;
+        }
+        out.add(new Entry(pos, expected));
     }
 
     @Nullable
@@ -232,7 +226,6 @@ public final class ClientProjection {
         }
     }
 
-    /** 一个待渲染的方块。 */
     public static final class Entry {
         public final BlockPos pos;
         public final IBlockState state;
