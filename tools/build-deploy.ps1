@@ -16,7 +16,9 @@ $env:GRADLE_USER_HOME = 'D:\dev\tools\gradle-home'
 
 Write-Host '=== [1/4] build ===' -ForegroundColor Cyan
 Set-Location $ver
-& .\gradlew.bat build --rerun-tasks --no-daemon 2>&1 | Tee-Object -FilePath $log | Out-Null
+# 删掉旧产物强制重打包，但保留 ForgeGradle 的 setup 缓存（比 --rerun-tasks 快一个数量级）
+Remove-Item (Join-Path $ver 'build\libs\*.jar') -Force -ErrorAction SilentlyContinue
+& .\gradlew.bat build --no-daemon 2>&1 | Tee-Object -FilePath $log | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'BUILD FAILED' -ForegroundColor Red
     Select-String -Path $log -Pattern 'error:|\.java:\d+' | Select-Object -First 10 | ForEach-Object { $_.Line }
