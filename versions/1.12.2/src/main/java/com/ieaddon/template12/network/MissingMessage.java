@@ -3,7 +3,9 @@ package com.ieaddon.template12.network;
 import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.client.resources.IResource;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
@@ -11,7 +13,11 @@ import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
 import net.minecraftforge.fml.common.network.simpleimpl.MessageContext;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 /**
@@ -69,30 +75,53 @@ public class MissingMessage implements IMessage {
             return null;
         }
 
-        /** 优先原版显示名；未翻译时回退尝试 registry-name 形式的键，最后退回短 id。 */
+        private static Map<String, String> LANG;
+
+        /** 读 IE 自己的 zh_cn.lang，按 registryName 反查中文名。 */
+        private static Map<String, String> lang() {
+            if (LANG != null) {
+                return LANG;
+            }
+            LANG = new HashMap<>();
+            try {
+                IResource res = Minecraft.getMinecraft().getResourceManager()
+                        .getResource(new ResourceLocation("immersiveengineering", "lang/zh_cn.lang"));
+                if (res != null) {
+                    try (InputStream in = res.getInputStream()) {
+                        java.io.BufferedReader reader = new java.io.BufferedReader(
+                                new java.io.InputStreamReader(in, StandardCharsets.UTF_8));
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            line = line.trim();
+                            int eq = line.indexOf('=');
+                            if (eq > 0 && !line.startsWith("#")) {
+                                LANG.put(line.substring(0, eq).trim(), line.substring(eq + 1).trim());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+                // 读不到就用原版显示名
+            }
+            return LANG;
+        }
+
         private static String displayName(ItemStack stack) {
             String name = stack.getDisplayName();
             if (!name.startsWith("tile.") && !name.startsWith("item.")) {
                 return name;
             }
             String id = stack.getItem().getRegistryName() == null
-                    ? "unknown"
+                    ? ""
                     : stack.getItem().getRegistryName().toString();
-            String base = stack.getItem().getTranslationKey(stack);
-            String[] keys = {
-                    base + "." + id + ".name",
-                    "tile." + id + ".name",
-                    "item." + id + ".name",
-                    "tile." + id.replace(':', '.') + ".name",
-                    "item." + id.replace(':', '.') + ".name"
-            };
-            for (String key : keys) {
-                String translated = net.minecraft.client.resources.I18n.format(key);
-                if (!translated.equals(key)) {
-                    return translated;
+            if (!id.isEmpty()) {
+                for (Map.Entry<String, String> e : lang().entrySet()) {
+                    if (e.getKey().endsWith(".name") && e.getKey().contains(id)) {
+                        return e.getValue();
+                    }
                 }
             }
-            return id;
+            return id.isEmpty() ? name : id;
         }
     }
 }
