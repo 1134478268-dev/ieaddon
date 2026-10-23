@@ -3,10 +3,8 @@ package com.ieaddon.template12.client;
 import com.ieaddon.template12.IEAddonTemplate;
 import com.ieaddon.template12.network.BuildRequestMessage;
 import com.ieaddon.template12.network.ModNetwork;
-import net.minecraft.client.renderer.BufferBuilder;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.BlockRendererDispatcher;
 import net.minecraft.client.renderer.GlStateManager;
 import net.minecraft.client.renderer.texture.TextureMap;
 import net.minecraft.entity.player.EntityPlayer;
@@ -51,6 +49,7 @@ public final class ProjectionRenderer {
         double py = player.lastTickPosY + (player.posY - player.lastTickPosY) * event.getPartialTicks();
         double pz = player.lastTickPosZ + (player.posZ - player.lastTickPosZ) * event.getPartialTicks();
 
+        mc.getTextureManager().bindTexture(TextureMap.LOCATION_BLOCKS_TEXTURE);
         GlStateManager.pushMatrix();
         GlStateManager.translate(-px, -py, -pz);
         GlStateManager.enableBlend();
@@ -58,49 +57,23 @@ public final class ProjectionRenderer {
                 GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA,
                 GL11.GL_ONE, GL11.GL_ZERO);
         GlStateManager.disableLighting();
-        GlStateManager.disableTexture2D();
         GlStateManager.depthMask(false);
+        GlStateManager.color(1.0f, 1.0f, 1.0f, 0.30f);
 
-        // IE 的机器方块用 TESR 渲染，BlockRendererDispatcher 只会画出 missing model（紫黑格），
-        // 所以投影改用纯色半透明立方体
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
-        buffer.begin(GL11.GL_QUADS, DefaultVertexFormats.POSITION_COLOR);
+        BlockRendererDispatcher dispatcher = mc.getBlockRendererDispatcher();
         for (ClientProjection.Entry entry : entries) {
-            drawCube(buffer, entry.pos.getX(), entry.pos.getY(), entry.pos.getZ());
+            GlStateManager.pushMatrix();
+            GlStateManager.translate(entry.pos.getX(), entry.pos.getY(), entry.pos.getZ());
+            // 注意：第二个参数是 0~1 的亮度，不是 int 光照值
+            dispatcher.renderBlockBrightness(entry.state, mc.world.getLightBrightness(entry.pos));
+            GlStateManager.popMatrix();
         }
-        tessellator.draw();
 
         GlStateManager.depthMask(true);
-        GlStateManager.enableTexture2D();
         GlStateManager.disableBlend();
         GlStateManager.enableLighting();
         GlStateManager.color(1.0f, 1.0f, 1.0f, 1.0f);
         GlStateManager.popMatrix();
-    }
-
-    private static void drawCube(BufferBuilder buf, double x, double y, double z) {
-        double x2 = x + 1.0D;
-        double y2 = y + 1.0D;
-        double z2 = z + 1.0D;
-        // 下 / 上 / 北 / 南 / 西 / 东
-        quad(buf, x, y, z, x2, y, z, x2, y, z2, x, y, z2);
-        quad(buf, x, y2, z, x, y2, z2, x2, y2, z2, x2, y2, z);
-        quad(buf, x, y, z, x, y2, z, x2, y2, z, x2, y, z);
-        quad(buf, x2, y, z2, x2, y2, z2, x, y2, z2, x, y, z2);
-        quad(buf, x, y, z2, x, y2, z2, x, y2, z, x, y, z);
-        quad(buf, x2, y, z, x2, y2, z, x2, y2, z2, x2, y, z2);
-    }
-
-    private static void quad(BufferBuilder buf,
-                             double x1, double y1, double z1,
-                             double x2, double y2, double z2,
-                             double x3, double y3, double z3,
-                             double x4, double y4, double z4) {
-        buf.pos(x1, y1, z1).color(0.45f, 0.72f, 1.0f, 0.30f).endVertex();
-        buf.pos(x2, y2, z2).color(0.45f, 0.72f, 1.0f, 0.30f).endVertex();
-        buf.pos(x3, y3, z3).color(0.45f, 0.72f, 1.0f, 0.30f).endVertex();
-        buf.pos(x4, y4, z4).color(0.45f, 0.72f, 1.0f, 0.30f).endVertex();
     }
 
     @SubscribeEvent
