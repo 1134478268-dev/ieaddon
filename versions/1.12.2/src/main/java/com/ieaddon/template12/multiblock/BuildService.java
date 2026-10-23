@@ -152,7 +152,7 @@ public final class BuildService {
         if (s == null) {
             return true;
         }
-        BlockPos wheelPos = pos.offset(side, 4).offset(side.rotateY(), 1).up().add(1, 1, 0);
+        BlockPos wheelPos = pos.offset(side, 4).offset(side.rotateY(), 1).up();
         int sizeH = s.length;
         int sizeW = s[0].length;
         // IE 调用斗轮时传的是 side.rotateYCCW()

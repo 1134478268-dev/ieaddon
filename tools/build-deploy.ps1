@@ -19,7 +19,7 @@ Set-Location $ver
 # 删掉旧产物强制重打包，但保留 ForgeGradle 的 setup 缓存（比 --rerun-tasks 快一个数量级）
 Remove-Item (Join-Path $ver 'build\libs\*.jar') -Force -ErrorAction SilentlyContinue
 # 只强制重跑 jar + reobfJar（不碰 ForgeGradle 的 setup 缓存）
-& .\gradlew.bat reobfJar --rerun-tasks --no-daemon 2>&1 | Tee-Object -FilePath $log | Out-Null
+& .\gradlew.bat reobfJar --no-daemon 2>&1 | Tee-Object -FilePath $log | Out-Null
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'BUILD FAILED' -ForegroundColor Red
     Select-String -Path $log -Pattern 'error:|\.java:\d+' | Select-Object -First 10 | ForEach-Object { $_.Line }
