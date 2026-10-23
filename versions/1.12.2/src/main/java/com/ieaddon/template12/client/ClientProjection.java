@@ -171,12 +171,13 @@ public final class ClientProjection {
         if (wheelStructure == null) {
             return;
         }
-        BlockPos wheelCenter = center.offset(facing, 4).offset(facing.rotateY(), 1).up();
+        BlockPos wheelCenter = center.offset(facing, 4).offset(facing.rotateY(), 1).up().west();
         int sizeH = wheelStructure.length;
         int sizeW = wheelStructure[0].length;
-        // IE 的斗轮 w 方向：NORTH +x、SOUTH -x、WEST +z、EAST -z（不是简单的 rotateY）
-        int wx = facing == EnumFacing.NORTH ? 1 : facing == EnumFacing.SOUTH ? -1 : 0;
-        int wz = facing == EnumFacing.WEST ? 1 : facing == EnumFacing.EAST ? -1 : 0;
+        // IE 调用斗轮时传的是 side.rotateYCCW()，不是挖掘机的 side
+        EnumFacing wheelSide = facing.rotateYCCW();
+        int wx = wheelSide == EnumFacing.NORTH ? 1 : wheelSide == EnumFacing.SOUTH ? -1 : 0;
+        int wz = wheelSide == EnumFacing.WEST ? 1 : wheelSide == EnumFacing.EAST ? -1 : 0;
         for (int h = 0; h < sizeH; h++) {
             for (int w = 0; w < sizeW; w++) {
                 ItemStack stack = wheelStructure[h][w][0];

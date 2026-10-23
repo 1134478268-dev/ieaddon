@@ -152,12 +152,13 @@ public final class BuildService {
         if (s == null) {
             return true;
         }
-        BlockPos wheelPos = pos.offset(side, 4).offset(side.rotateY(), 1).up();
+        BlockPos wheelPos = pos.offset(side, 4).offset(side.rotateY(), 1).up().west();
         int sizeH = s.length;
         int sizeW = s[0].length;
-        // IE 斗轮 w 方向：NORTH +x、SOUTH -x、WEST +z、EAST -z
-        int wx = side == EnumFacing.NORTH ? 1 : side == EnumFacing.SOUTH ? -1 : 0;
-        int wz = side == EnumFacing.WEST ? 1 : side == EnumFacing.EAST ? -1 : 0;
+        // IE 调用斗轮时传的是 side.rotateYCCW()
+        EnumFacing wheelSide = side.rotateYCCW();
+        int wx = wheelSide == EnumFacing.NORTH ? 1 : wheelSide == EnumFacing.SOUTH ? -1 : 0;
+        int wz = wheelSide == EnumFacing.WEST ? 1 : wheelSide == EnumFacing.EAST ? -1 : 0;
         for (int h = 0; h < sizeH; h++) {
             for (int w = 0; w < sizeW; w++) {
                 ItemStack stack = s[h][w][0];

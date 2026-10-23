@@ -37,7 +37,16 @@ if ($jarTime -lt $newestSrc) {
 Write-Host ("jar OK: {0} bytes @ {1}" -f (Get-Item $jar).Length, $jarTime) -ForegroundColor Green
 
 Write-Host '=== [3/4] deploy ===' -ForegroundColor Cyan
+# 先杀掉占用 jar 的旧游戏，否则 Copy-Item 会失败
+Get-Process java -ErrorAction SilentlyContinue |
+    Where-Object { $_.Path -like '*jdk-8*' } |
+    ForEach-Object { Stop-Process -Id $_.Id -Force }
+Start-Sleep -Seconds 3
 Copy-Item $jar $modJar -Force
+if ((Get-Item $modJar).LastWriteTime -lt $jarTime) {
+    Write-Host 'DEPLOY FAILED: mods jar is older than build jar' -ForegroundColor Red
+    exit 1
+}
 Write-Host ("copied to mods: {0}" -f (Get-Item $modJar).LastWriteTime) -ForegroundColor Green
 
 if ($NoLaunch) {
