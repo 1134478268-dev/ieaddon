@@ -171,7 +171,7 @@ public final class ClientProjection {
         if (wheelStructure == null) {
             return;
         }
-        BlockPos wheelCenter = center.offset(facing, 4).offset(facing.rotateY(), 1).up().west();
+        BlockPos wheelCenter = center.offset(facing, 4).offset(facing.rotateY(), 1).up().add(2, 0, 0);
         int sizeH = wheelStructure.length;
         int sizeW = wheelStructure[0].length;
         // IE 调用斗轮时传的是 side.rotateYCCW()，不是挖掘机的 side
