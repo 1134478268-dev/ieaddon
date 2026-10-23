@@ -54,6 +54,7 @@ public class MissingMessage implements IMessage {
         public IMessage onMessage(MissingMessage message, MessageContext ctx) {
             List<ItemStack> stacks = message.stacks;
             List<Integer> counts = message.counts;
+            System.out.println("[ieaddon] client received missing list, size=" + message.stacks.size());
             Minecraft.getMinecraft().addScheduledTask(() -> {
                 EntityPlayer player = Minecraft.getMinecraft().player;
                 if (player == null) {
@@ -62,10 +63,36 @@ public class MissingMessage implements IMessage {
                 player.sendMessage(new TextComponentString(TextFormatting.RED + "材料不足，还缺："));
                 for (int i = 0; i < stacks.size(); i++) {
                     player.sendMessage(new TextComponentString(
-                            TextFormatting.GRAY + "  " + counts.get(i) + "x " + stacks.get(i).getDisplayName()));
+                            TextFormatting.GRAY + "  " + counts.get(i) + "x " + displayName(stacks.get(i))));
                 }
             });
             return null;
+        }
+
+        /** 优先原版显示名；未翻译时回退尝试 registry-name 形式的键，最后退回短 id。 */
+        private static String displayName(ItemStack stack) {
+            String name = stack.getDisplayName();
+            if (!name.startsWith("tile.") && !name.startsWith("item.")) {
+                return name;
+            }
+            String id = stack.getItem().getRegistryName() == null
+                    ? "unknown"
+                    : stack.getItem().getRegistryName().toString();
+            String base = stack.getItem().getTranslationKey(stack);
+            String[] keys = {
+                    base + "." + id + ".name",
+                    "tile." + id + ".name",
+                    "item." + id + ".name",
+                    "tile." + id.replace(':', '.') + ".name",
+                    "item." + id.replace(':', '.') + ".name"
+            };
+            for (String key : keys) {
+                String translated = net.minecraft.client.resources.I18n.format(key);
+                if (!translated.equals(key)) {
+                    return translated;
+                }
+            }
+            return id;
         }
     }
 }

@@ -88,6 +88,7 @@ public final class BuildService {
                 stacks.add(entry.stack);
                 counts.add(entry.count);
             }
+            System.out.println("[ieaddon] server sending missing list, size=" + stacks.size());
             com.ieaddon.template12.network.ModNetwork.CHANNEL.sendTo(
                     new com.ieaddon.template12.network.MissingMessage(stacks, counts), player);
             return;
