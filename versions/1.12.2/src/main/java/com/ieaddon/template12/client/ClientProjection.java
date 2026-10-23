@@ -242,9 +242,15 @@ public final class ClientProjection {
         }
     }
 
+    /** 传送带不投影，由玩家自己放（IE 的 conveyor 状态在 NBT 里，自动摆容易朝向错）。 */
+    private static boolean isConveyor(ItemStack stack) {
+        net.minecraft.util.ResourceLocation id = stack.getItem().getRegistryName();
+        return id != null && id.getPath().contains("conveyor");
+    }
+
     private static void addIfMissing(List<Entry> out, Minecraft mc, ItemStack stack,
                                      int dx, int dy, int dz, BlockPos base) {
-        if (stack == null || stack.isEmpty()) {
+        if (stack == null || stack.isEmpty() || isConveyor(stack)) {
             return;
         }
         IBlockState expected = expectedState(stack);

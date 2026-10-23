@@ -32,6 +32,7 @@ public final class BuildService {
 
     public static void build(EntityPlayerMP player, int index, String requestedName,
                              BlockPos center, EnumFacing facing, int lift) {
+        skippedConveyors = 0;
         World world = player.world;
         List<IMultiblock> all = MultiblockHandler.getMultiblocks();
 
@@ -113,6 +114,10 @@ public final class BuildService {
         BuildTasks.add(task);
         player.sendMessage(new TextComponentString(
                 TextFormatting.GREEN + "开始搭建 " + toPlace.size() + " 个方块（逐块进行）"));
+        if (skippedConveyors > 0) {
+            player.sendMessage(new TextComponentString(TextFormatting.YELLOW
+                    + "有 " + skippedConveyors + " 个传送带需要你自己放置（投影已隐藏传送带）"));
+        }
     }
 
     private static boolean addExcavator(EntityPlayerMP player, World world, IMultiblock multiblock,
@@ -215,8 +220,19 @@ public final class BuildService {
         return true;
     }
 
+    private static int skippedConveyors;
+
+    private static boolean isConveyor(ItemStack stack) {
+        net.minecraft.util.ResourceLocation id = stack.getItem().getRegistryName();
+        return id != null && id.getPath().contains("conveyor");
+    }
+
     private static boolean addOne(EntityPlayerMP player, World world, BlockPos pos, IBlockState state,
                                   ItemStack stack, Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
+        if (isConveyor(stack)) {
+            skippedConveyors++;
+            return true;
+        }
         if (world.getBlockState(pos) == state) {
             return true;
         }
