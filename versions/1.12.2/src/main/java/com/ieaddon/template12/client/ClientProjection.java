@@ -20,12 +20,16 @@ import java.util.List;
  *
  * <p>坐标严格照抄 IE 的 createStructure：
  * <ul>
- *   <li>挖掘机：{@code pos + side*l + side.rotateY()*w + (0,h,0)}，数组 {@code [h+1][l][w+1]}；</li>
- *   <li>斗轮：中心 {@code pos + side*4}，{@code + (0,h,0) + rotateY*w}，数组 {@code [h+3][w+3][0]}；</li>
+ *   <li>挖掘机：{@code pos + side*l + side.rotateY()*w + (0,h,0)}；</li>
+ *   <li>斗轮：中心 {@code pos + side*4}，{@code + (0,h,0) + rotateYCCW 方向*w}；</li>
  *   <li>其他结构：按数组中心映射。</li>
  * </ul>
+ *
+ * <p>避让规则：投影如果与已有方块重叠，整体向上抬，直到没有阻挡。
  */
 public final class ClientProjection {
+    private static final int MAX_LIFT = 8;
+
     private static IMultiblock multiblock;
     private static int index = -1;
     private static ItemStack[][][] structure;
@@ -34,6 +38,7 @@ public final class ClientProjection {
     private static BlockPos center;
     private static EnumFacing facing = EnumFacing.NORTH;
     private static boolean fixed;
+    private static int lift;
 
     private ClientProjection() {
     }
@@ -62,6 +67,7 @@ public final class ClientProjection {
         }
         center = null;
         fixed = false;
+        lift = 0;
         Minecraft mc = Minecraft.getMinecraft();
         facing = mc.player != null ? mc.player.getHorizontalFacing() : EnumFacing.NORTH;
     }
@@ -100,7 +106,7 @@ public final class ClientProjection {
     }
 
     public static int lift() {
-        return 0;
+        return lift;
     }
 
     public static void update() {
@@ -112,11 +118,33 @@ public final class ClientProjection {
             center = null;
             return;
         }
+        center = mc.objectMouseOver.getBlockPos();
         if (mc.player != null) {
             facing = mc.player.getHorizontalFacing();
         }
-        // pos = 准星方块（与 IE createStructure 的 pos 语义一致）
-        center = mc.objectMouseOver.getBlockPos();
+        lift = computeLift();
+    }
+
+    /** 从 0 开始找最小的上移量，使投影不碰到已有方块。 */
+    private static int computeLift() {
+        Minecraft mc = Minecraft.getMinecraft();
+        if (mc.world == null || center == null) {
+            return 0;
+        }
+        for (int offset = 0; offset <= MAX_LIFT; offset++) {
+            boolean blocked = false;
+            for (Entry entry : entries(offset)) {
+                IBlockState actual = mc.world.getBlockState(entry.pos);
+                if (!actual.getBlock().isAir(actual, mc.world, entry.pos)) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) {
+                return offset;
+            }
+        }
+        return MAX_LIFT;
     }
 
     public static void fix() {
@@ -131,24 +159,29 @@ public final class ClientProjection {
         wheelStructure = null;
         center = null;
         fixed = false;
+        lift = 0;
     }
 
     public static List<Entry> entries() {
+        return entries(lift);
+    }
+
+    private static List<Entry> entries(int yOffset) {
         List<Entry> out = new ArrayList<>();
         if (structure == null || center == null) {
             return out;
         }
         Minecraft mc = Minecraft.getMinecraft();
         if (name.contains("Excavator")) {
-            addExcavator(out, mc);
-            addWheel(out, mc);
+            addExcavator(out, mc, yOffset);
+            addWheel(out, mc, yOffset);
         } else {
-            addGeneric(out, mc);
+            addGeneric(out, mc, yOffset);
         }
         return out;
     }
 
-    private static void addExcavator(List<Entry> out, Minecraft mc) {
+    private static void addExcavator(List<Entry> out, Minecraft mc, int yOffset) {
         int sizeH = structure.length;
         int sizeL = structure[0].length;
         int sizeW = structure[0][0].length;
@@ -159,20 +192,19 @@ public final class ClientProjection {
                         continue;
                     }
                     ItemStack stack = structure[h][l][w];
-                    addIfMissing(out, mc, stack, l, h - sizeH / 2, w - sizeW / 2, center);
+                    addIfMissing(out, mc, stack, l, h - sizeH / 2 + yOffset, w - sizeW / 2, center);
                 }
             }
         }
     }
 
-    private static void addWheel(List<Entry> out, Minecraft mc) {
+    private static void addWheel(List<Entry> out, Minecraft mc, int yOffset) {
         if (wheelStructure == null) {
             return;
         }
         BlockPos wheelCenter = center.offset(facing, 4);
         int sizeH = wheelStructure.length;
         int sizeW = wheelStructure[0].length;
-        // IE 调用斗轮时传的是 side.rotateYCCW()，不是挖掘机的 side
         EnumFacing wheelSide = facing.rotateYCCW();
         int wx = wheelSide == EnumFacing.NORTH ? 1 : wheelSide == EnumFacing.SOUTH ? -1 : 0;
         int wz = wheelSide == EnumFacing.WEST ? 1 : wheelSide == EnumFacing.EAST ? -1 : 0;
@@ -187,7 +219,7 @@ public final class ClientProjection {
                     continue;
                 }
                 int off = w - sizeW / 2;
-                BlockPos pos = wheelCenter.add(wx * off, h - sizeH / 2, wz * off);
+                BlockPos pos = wheelCenter.add(wx * off, h - sizeH / 2 + yOffset, wz * off);
                 if (mc.world != null && mc.world.getBlockState(pos) == expected) {
                     continue;
                 }
@@ -196,7 +228,7 @@ public final class ClientProjection {
         }
     }
 
-    private static void addGeneric(List<Entry> out, Minecraft mc) {
+    private static void addGeneric(List<Entry> out, Minecraft mc, int yOffset) {
         int sizeH = structure.length;
         int sizeL = structure[0].length;
         int sizeW = structure[0][0].length;
@@ -204,7 +236,7 @@ public final class ClientProjection {
             for (int l = 0; l < sizeL; l++) {
                 for (int w = 0; w < sizeW; w++) {
                     ItemStack stack = structure[h][l][w];
-                    addIfMissing(out, mc, stack, l - sizeL / 2, h - sizeH / 2, w - sizeW / 2, center);
+                    addIfMissing(out, mc, stack, l - sizeL / 2, h - sizeH / 2 + yOffset, w - sizeW / 2, center);
                 }
             }
         }

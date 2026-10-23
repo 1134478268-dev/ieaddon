@@ -46,10 +46,10 @@ public final class BuildService {
                 return;
             }
             // 先摆斗轮（中心是钢块），再摆机器主体，视觉上"从钢块往上长"
-            if (wheel != null && !addWheel(player, world, wheel, center, facing, toPlace, cost)) {
+            if (wheel != null && !addWheel(player, world, wheel, center, facing, lift, toPlace, cost)) {
                 return;
             }
-            if (!addExcavator(player, world, exca, center, facing, toPlace, cost)) {
+            if (!addExcavator(player, world, exca, center, facing, lift, toPlace, cost)) {
                 return;
             }
         } else {
@@ -64,7 +64,7 @@ public final class BuildService {
                 player.sendMessage(new TextComponentString(TextFormatting.RED + "找不到结构 [" + requestedName + "]"));
                 return;
             }
-            if (!addGeneric(player, world, multiblock, center, facing, toPlace, cost)) {
+            if (!addGeneric(player, world, multiblock, center, facing, lift, toPlace, cost)) {
                 return;
             }
         }
@@ -112,7 +112,7 @@ public final class BuildService {
     }
 
     private static boolean addExcavator(EntityPlayerMP player, World world, IMultiblock multiblock,
-                                        BlockPos pos, EnumFacing side,
+                                        BlockPos pos, EnumFacing side, int lift,
                                         Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
         ItemStack[][][] s = multiblock.getStructureManual();
         if (s == null) {
@@ -135,7 +135,7 @@ public final class BuildService {
                     if (state == null) {
                         continue;
                     }
-                    BlockPos p = ProjectionMath.worldPos(pos, side, l, h - sizeH / 2, w - sizeW / 2);
+                    BlockPos p = ProjectionMath.worldPos(pos, side, l, h - sizeH / 2 + lift, w - sizeW / 2);
                     if (!addOne(player, world, p, state, stack, toPlace, cost)) {
                         return false;
                     }
@@ -146,7 +146,7 @@ public final class BuildService {
     }
 
     private static boolean addWheel(EntityPlayerMP player, World world, IMultiblock multiblock,
-                                    BlockPos pos, EnumFacing side,
+                                    BlockPos pos, EnumFacing side, int lift,
                                     Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
         ItemStack[][][] s = multiblock.getStructureManual();
         if (s == null) {
@@ -170,7 +170,7 @@ public final class BuildService {
                     continue;
                 }
                 int off = w - sizeW / 2;
-                BlockPos p = wheelPos.add(wx * off, h - sizeH / 2, wz * off);
+                BlockPos p = wheelPos.add(wx * off, h - sizeH / 2 + lift, wz * off);
                 if (!addOne(player, world, p, state, stack, toPlace, cost)) {
                     return false;
                 }
@@ -180,7 +180,7 @@ public final class BuildService {
     }
 
     private static boolean addGeneric(EntityPlayerMP player, World world, IMultiblock multiblock,
-                                      BlockPos pos, EnumFacing side,
+                                      BlockPos pos, EnumFacing side, int lift,
                                       Map<BlockPos, IBlockState> toPlace, List<CostEntry> cost) {
         ItemStack[][][] s = multiblock.getStructureManual();
         if (s == null) {
