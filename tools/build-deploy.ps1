@@ -4,15 +4,18 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$proj   = 'D:\dev\projects\IEAddon'
+$proj   = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $ver    = Join-Path $proj 'versions\1.12.2'
 $run    = Join-Path $proj 'run-1.12.2'
 $jar    = Join-Path $ver 'build\libs\ieaddon-1.0.0.jar'
 $modJar = Join-Path $run 'mods\ieaddon-1.0.0.jar'
-$log    = 'D:\dev\tmp\build-flow.log'
+$log    = Join-Path $proj 'build-flow.log'
 
-$env:JAVA_HOME = 'D:\dev\tools\jdk-8'
-$env:GRADLE_USER_HOME = 'D:\dev\tools\gradle-home'
+# 需要 JDK 8：预先设置 JAVA_HOME
+if (-not $env:JAVA_HOME) {
+    Write-Host 'JAVA_HOME 未设置，请指向 JDK 8 安装目录' -ForegroundColor Red
+    exit 1
+}
 
 Write-Host '=== [1/4] build ===' -ForegroundColor Cyan
 Set-Location $ver
