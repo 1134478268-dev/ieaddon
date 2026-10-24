@@ -1,7 +1,7 @@
 # IE Addon 工程（Immersive Engineering 附属模组）
 
 一个面向 **沉浸工程（Immersive Engineering）** 的 addon 骨架，目标内容是
-**新工具 / 新装备 / 新物品**，并提供 1.12.2 与 1.20.1 两套可编译工程。
+—————投影自动搭建————— 
 
 ## 目录结构
 
