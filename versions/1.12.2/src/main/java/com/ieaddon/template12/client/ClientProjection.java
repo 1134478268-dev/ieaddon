@@ -2,7 +2,6 @@ package com.ieaddon.template12.client;
 
 import blusunrize.immersiveengineering.api.MultiblockHandler;
 import blusunrize.immersiveengineering.api.MultiblockHandler.IMultiblock;
-import com.ieaddon.template12.multiblock.ProjectionMath;
 import com.ieaddon.template12.multiblock.StructureLayout;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -12,7 +11,6 @@ import net.minecraft.util.EnumFacing;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 

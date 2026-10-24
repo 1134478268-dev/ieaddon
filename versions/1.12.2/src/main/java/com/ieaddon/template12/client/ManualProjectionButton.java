@@ -8,7 +8,6 @@ import blusunrize.lib.manual.gui.GuiManual;
 import com.ieaddon.template12.IEAddonTemplate;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
-import net.minecraft.item.ItemStack;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.client.event.GuiScreenEvent;
