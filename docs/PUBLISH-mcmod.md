@@ -1,4 +1,4 @@
-# MCMod 发布信息（Immersive Blueprints）
+# MCMod 发布信息（IE：投影自动搭建）
 
 > 依据《MC百科模组(Mod)收录规则》与《主站通用命名规则》整理。
 > 提交地址：<https://www.mcmod.cn/class/add/>
@@ -7,13 +7,13 @@
 
 | 字段 | 内容 |
 |---|---|
-| 主要名称（中文） | **沉浸蓝图** |
-| 次要名称（英文） | Immersive Blueprints |
+| 主要名称（中文） | **IE：投影自动搭建** |
+| 次要名称（英文） | IE: Projection Auto-Build |
 | 缩写 | 无 |
 | MODID | `ieaddon` |
 
 > 命名规则 3（简体中文 MOD）：主要名称填中文名，次要名称填作者给出的英文名。
-> 收录规则 11：不得使用默认 Mod 名称/MODID——已把模板默认名 `IE Addon Template` 改为 `Immersive Blueprints`。
+> 收录规则 11：不得使用默认 Mod 名称/MODID——已把模板默认名 `IE Addon Template` 改为 `IE: Projection Auto-Build`。
 
 ## 二、基本信息
 
@@ -71,7 +71,7 @@
 | 5. 侵权/剽窃 | 使用 IE 公开 API，源码可见，已署名 BluSunrize，采用同许可证 |
 | 6. 不存在/画饼/空壳 | 已发布可运行版本（1.12.2，jar 51 KB） |
 | 8-10. 木马/后门/负面 | 无 |
-| 11. 默认名称/MODID | 已改为 `Immersive Blueprints`；MODID `ieaddon` 非默认且无冲突 |
+| 11. 默认名称/MODID | 已改为 `IE: Projection Auto-Build`；MODID `ieaddon` 非默认且无冲突 |
 | 12-15. 付费/内购 | 完全免费，无任何付费内容 |
 | 16-18. 色情/极端/自残 | 无 |
 

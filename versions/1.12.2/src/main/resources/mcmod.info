@@ -1,7 +1,7 @@
 [
   {
     "modid": "ieaddon",
-    "name": "Immersive Blueprints",
+    "name": "IE: Projection Auto-Build",
     "description": "为沉浸工程手册添加多方块投影与自动搭建。An Immersive Engineering addon that adds multiblock projection and auto-building to the Engineer's Manual.",
     "version": "${version}",
     "mcversion": "${mcversion}",
