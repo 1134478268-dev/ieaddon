@@ -31,9 +31,8 @@ repositories {
     maven { url = 'https://bmclapi2.bangbang93.com/maven' }
     mavenCentral()
     // 本地 Maven 仓库：FG 2.3 的 deobfCompile 只接受 maven 坐标，不接受 files()
-    // 本地 IE 依赖仓库：把 IE 0.12-98 的 jar + pom 放到项目根的 repo/ 下，
-    // 或先用 mavenLocal() 安装，再取消下一行注释
-    // maven { url = "file:${rootDir}/../../repo" }
+    // 本地 IE 依赖仓库：把 IE 0.12-98 的 jar + pom 放到项目根的 repo/ 下
+    maven { url = "file:${rootDir}/../../repo" }
 }
 
 dependencies {

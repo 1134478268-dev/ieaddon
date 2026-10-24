@@ -8,7 +8,7 @@
     "url": "",
     "updateUrl": "",
     "authorList": ["YourName"],
-    "credits": "Immersive Engineering by BluSunrize",
+    "credits": "Unofficial addon. Immersive Engineering by BluSunrize (https://github.com/BluSunrize/ImmersiveEngineering). Licensed under Blu's License of Common Sense.",
     "logoFile": "",
     "screenshots": [],
     "dependencies": ["immersiveengineering"]
