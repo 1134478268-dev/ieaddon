@@ -38,7 +38,8 @@ public final class ClientProjection {
     private static ItemStack[][][] wheelStructure;
     private static String name = "";
     private static BlockPos center;
-    private static EnumFacing facing = EnumFacing.NORTH;
+    private static EnumFacing baseFacing = EnumFacing.NORTH;
+    private static int rotation = 1; // 默认 90°（横着）
     private static boolean fixed;
     private static int lift;
 
@@ -73,7 +74,7 @@ public final class ClientProjection {
         fixed = false;
         lift = 0;
         Minecraft mc = Minecraft.getMinecraft();
-        facing = mc.player != null ? mc.player.getHorizontalFacing().rotateY() : EnumFacing.NORTH;
+        baseFacing = mc.player != null ? mc.player.getHorizontalFacing() : EnumFacing.NORTH;
     }
 
     private static IMultiblock find(List<IMultiblock> all, String key) {
@@ -106,7 +107,19 @@ public final class ClientProjection {
     }
 
     public static EnumFacing facing() {
-        return facing;
+        EnumFacing f = baseFacing;
+        for (int i = 0; i < rotation; i++) {
+            f = f.rotateY();
+        }
+        return f;
+    }
+
+    public static int rotation() {
+        return rotation;
+    }
+
+    public static void cycleRotation() {
+        rotation = (rotation + 1) % 4;
     }
 
     public static int lift() {
@@ -132,7 +145,7 @@ public final class ClientProjection {
         }
         center = hit.getBlockPos();
         // 投影相对玩家再转 90 度
-        facing = mc.player.getHorizontalFacing().rotateY();
+        baseFacing = mc.player.getHorizontalFacing();
         lift = computeLift();
     }
 
@@ -145,7 +158,7 @@ public final class ClientProjection {
         for (int offset = 0; offset <= MAX_LIFT; offset++) {
             boolean blocked = false;
             for (StructureLayout.Placement p
-                    : StructureLayout.layout(multiblock, wheelMultiblock, center, facing, offset, true)) {
+                    : StructureLayout.layout(multiblock, wheelMultiblock, center, facing(), offset, true)) {
                 IBlockState actual = mc.world.getBlockState(p.pos);
                 if (!actual.getBlock().isAir(actual, mc.world, p.pos)) {
                     blocked = true;
@@ -181,7 +194,7 @@ public final class ClientProjection {
         }
         Minecraft mc = Minecraft.getMinecraft();
         for (StructureLayout.Placement p
-                : StructureLayout.layout(multiblock, wheelMultiblock, center, facing, lift, true)) {
+                : StructureLayout.layout(multiblock, wheelMultiblock, center, facing(), lift, true)) {
             if (mc.world != null && mc.world.getBlockState(p.pos) == p.state) {
                 continue;
             }

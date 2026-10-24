@@ -30,6 +30,9 @@ public class IEAddonTemplate {
     public void preInit(FMLPreInitializationEvent event) {
         LOGGER.info("[{}] preInit", MODID);
         com.ieaddon.template12.network.ModNetwork.register();
+        if (event.getSide().isClient()) {
+            com.ieaddon.template12.client.ClientKeybindings.register();
+        }
     }
 
     @Mod.EventHandler

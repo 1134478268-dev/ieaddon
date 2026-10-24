@@ -1,5 +1,5 @@
-{
-  "item.ieaddon.my_tool.name": "Engineer's Multi Tool",
-  "item.ieaddon.my_upgrade.name": "Efficiency Upgrade",
-  "item.ieaddon.my_upgrade.desc": "Install it in the Engineer's Workbench to boost the tool."
-}
+item.ieaddon.my_tool.name=Engineer's Multi Tool
+item.ieaddon.my_upgrade.name=Efficiency Upgrade
+item.ieaddon.my_upgrade.desc=Install it in the Engineer's Workbench to boost the tool.
+key.categories.ieaddon=IE Addon
+key.ieaddon.rotate=Rotate Projection
