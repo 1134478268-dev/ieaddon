@@ -22,14 +22,12 @@ import java.util.Map;
  * <p>方块位置全部来自 {@link StructureLayout}，与客户端投影同源。
  */
 public final class BuildService {
-    private static int skippedConveyors;
-
     private BuildService() {
     }
 
     public static void build(EntityPlayerMP player, int index, String requestedName,
                              BlockPos center, EnumFacing facing, int lift) {
-        skippedConveyors = 0;
+        int skippedConveyors = 0;
         World world = player.world;
         List<IMultiblock> all = MultiblockHandler.getMultiblocks();
 
