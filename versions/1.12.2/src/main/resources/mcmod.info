@@ -1,16 +1,18 @@
 [
   {
     "modid": "ieaddon",
-    "name": "IE Addon Template",
-    "description": "An Immersive Engineering addon template.",
+    "name": "Immersive Blueprints",
+    "description": "为沉浸工程手册添加多方块投影与自动搭建。An Immersive Engineering addon that adds multiblock projection and auto-building to the Engineer's Manual.",
     "version": "${version}",
     "mcversion": "${mcversion}",
-    "url": "",
+    "url": "https://github.com/1134478268-dev/ieaddon",
     "updateUrl": "",
-    "authorList": ["YourName"],
+    "authorList": ["1134478268-dev"],
     "credits": "Unofficial addon. Immersive Engineering by BluSunrize (https://github.com/BluSunrize/ImmersiveEngineering). Licensed under Blu's License of Common Sense.",
     "logoFile": "",
     "screenshots": [],
-    "dependencies": ["immersiveengineering"]
+    "dependencies": [
+      "required-after:immersiveengineering"
+    ]
   }
 ]
